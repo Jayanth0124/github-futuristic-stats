@@ -3,18 +3,33 @@ import { detectSpecialty } from '../../src/engine/specialty';
 import { getDevLevel } from '../../src/engine/devLevel';
 import { renderCard } from '../../src/renderer/cardRenderer';
 
-// 1. Helper function to fetch the image and convert it to Base64
+// 1. Bulletproof Base64 Image Fetcher
 async function getBase64Image(url) {
   try {
-    const response = await fetch(url);
+    // Append size parameter to force a small 120px image. 
+    // This keeps the Base64 string very small and prevents GitHub Camo from blocking it.
+    const sizeUrl = url.includes('?') ? `${url}&s=120` : `${url}?s=120`;
+    
+    const response = await fetch(sizeUrl, {
+      headers: {
+        // Prevents GitHub from blocking the automated Vercel request
+        "User-Agent": "GitHub-Stats-Renderer" 
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.statusText}`);
+    }
+
     const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const base64 = buffer.toString('base64');
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
     const mimeType = response.headers.get('content-type') || 'image/jpeg';
+    
     return `data:${mimeType};base64,${base64}`;
   } catch (error) {
-    console.error("Failed to convert image to Base64:", error);
-    return ""; // Fallback empty string if it fails
+    console.error("Base64 Image Error:", error);
+    // Fallback: A transparent 1x1 pixel so it doesn't show a broken "X" icon if it fails
+    return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
   }
 }
 
@@ -28,7 +43,7 @@ export default async function handler(req, res) {
 
     const githubData = await fetchUser(username);
 
-    // 2. Convert the avatar URL to a Base64 string before rendering
+    // 2. Get the optimized Base64 Avatar
     const base64Avatar = await getBase64Image(githubData.user.avatar_url);
 
     const specialty = detectSpecialty(githubData.languages);
@@ -42,8 +57,7 @@ export default async function handler(req, res) {
       name: githubData.user.name || username,
       level: level,
       specialty: specialty,
-      // 3. Pass the Base64 string to the renderer instead of the URL
-      avatar: base64Avatar, 
+      avatar: base64Avatar, // 3. Inject the clean Base64 string
       totalCommits: githubData.totalCommits || 0,
       stars: githubData.stars || 0,
       streak: githubData.streak || 0,
