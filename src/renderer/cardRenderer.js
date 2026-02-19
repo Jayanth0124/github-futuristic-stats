@@ -1,5 +1,4 @@
 // --- 1. THEME DEFINITIONS ---
-// --- 1. THEME DEFINITIONS ---
 const themes = {
   // 1. ORIGINAL LUXURY (Default)
   platinum: {
@@ -73,8 +72,6 @@ const themes = {
   }
 };
 
-// ... keep the rest of the file exactly the same (escapeHTML function and renderCard function)
-
 // --- HELPER: Safe XML Escaping ---
 function escapeHTML(str) {
   if (!str) return "UNKNOWN";
@@ -97,7 +94,8 @@ export function renderCard(data, themeName = "platinum") {
     name: safe(data.name.toUpperCase()),
     level: safe(data.level.toUpperCase()),
     specialty: safe(data.specialty.toUpperCase()),
-    avatar: safe(data.avatar),
+    // Changed: Grabs the centerText instead of avatar
+    centerText: safe((data.centerText || 'DEV').substring(0, 3).toUpperCase()), 
     commits: (data.totalCommits * 1.5).toLocaleString(),
     stars: (data.stars * 850).toLocaleString(),
     stability: Math.min(100, (data.streak / 365) * 100).toFixed(1),
@@ -166,7 +164,7 @@ export function renderCard(data, themeName = "platinum") {
   <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&amp;family=Montserrat:wght@300;500&amp;display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&amp;family=Montserrat:wght@300;500;700&amp;display=swap');
       </style>
 
       <radialGradient id="bgGrad" cx="50%" cy="50%" r="90%" fx="50%" fy="50%">
@@ -181,10 +179,6 @@ export function renderCard(data, themeName = "platinum") {
       <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
         <path d="M 40 0 L 0 0 0 40" fill="none" stroke="${theme.grid}" stroke-width="0.5"/>
       </pattern>
-      
-      <clipPath id="pilotClip">
-        <circle cx="0" cy="0" r="48" />
-      </clipPath>
     </defs>
 
     <rect width="${width}" height="${height}" rx="4" fill="url(#bgGrad)" stroke="#333" stroke-width="1"/>
@@ -208,7 +202,10 @@ export function renderCard(data, themeName = "platinum") {
       </g>
       
       <circle r="55" fill="none" stroke="url(#accentGrad)" stroke-width="1.5" />
-      <image href="${user.avatar}" x="-48" y="-48" width="96" height="96" clip-path="url(#pilotClip)" opacity="0.95"/>
+      <circle r="48" fill="${theme.grid}" opacity="0.6"/>
+      <text x="0" y="12" fill="${theme.textMain}" font-family="'Montserrat', sans-serif" font-weight="700" font-size="36" text-anchor="middle" letter-spacing="2">
+        ${user.centerText}
+      </text>
       <circle r="48" fill="url(#accentGrad)" opacity="0.1" />
     </g>
 
