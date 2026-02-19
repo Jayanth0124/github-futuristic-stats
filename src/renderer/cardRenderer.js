@@ -90,16 +90,48 @@ export function renderCard(data, themeName = "platinum") {
 
   // 2. Data Preparation
   const safe = escapeHTML;
+  const rawCenterText = (data.centerText || 'DEV').toUpperCase().trim();
+  
   const user = {
     name: safe(data.name.toUpperCase()),
     level: safe(data.level.toUpperCase()),
     specialty: safe(data.specialty.toUpperCase()),
-    // Changed: Grabs the centerText instead of avatar
-    centerText: safe((data.centerText || 'DEV').substring(0, 3).toUpperCase()), 
+    centerText: safe(rawCenterText),
     commits: (data.totalCommits * 1.5).toLocaleString(),
     stars: (data.stars * 850).toLocaleString(),
     stability: Math.min(100, (data.streak / 365) * 100).toFixed(1),
   };
+
+  // --- SMART TEXT RENDERER FOR CENTER CIRCLE ---
+  const words = user.centerText.split(' ');
+  let centerTextSVG = '';
+
+  if (words.length === 1) {
+    // Single word logic (e.g., "JAYANTH" or "JD")
+    const word = words[0];
+    const fontSize = word.length > 4 ? 18 : 36;
+    const yOffset = word.length > 4 ? 6 : 12;
+    centerTextSVG = `
+      <text x="0" y="${yOffset}" fill="${theme.textMain}" font-family="'Montserrat', sans-serif" font-weight="700" font-size="${fontSize}" text-anchor="middle" letter-spacing="1">
+        ${word}
+      </text>`;
+  } else {
+    // Two words logic (e.g., "JAYANTH CHOWDARY")
+    const line1 = words[0];
+    const line2 = words.slice(1).join(' '); // Groups any remaining words to line 2
+    
+    // Auto-scale fonts for both lines so they fit
+    const font1 = line1.length > 6 ? 12 : 16;
+    const font2 = line2.length > 6 ? 12 : 16;
+
+    centerTextSVG = `
+      <text x="0" y="-4" fill="${theme.textMain}" font-family="'Montserrat', sans-serif" font-weight="700" font-size="${font1}" text-anchor="middle" letter-spacing="1">
+        ${line1}
+      </text>
+      <text x="0" y="16" fill="${theme.textMain}" font-family="'Montserrat', sans-serif" font-weight="700" font-size="${font2}" text-anchor="middle" letter-spacing="1">
+        ${line2}
+      </text>`;
+  }
 
   // 3. Layout Constants
   const width = 800;
@@ -128,8 +160,6 @@ export function renderCard(data, themeName = "platinum") {
       const y2 = center.y + radius * Math.sin(toRad(endAngle));
 
       const largeArc = degrees > 180 ? 1 : 0;
-
-      // Use theme ring colors
       const color = theme.ringColors[i % theme.ringColors.length];
 
       const d = `M ${center.x} ${center.y} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
@@ -203,9 +233,9 @@ export function renderCard(data, themeName = "platinum") {
       
       <circle r="55" fill="none" stroke="url(#accentGrad)" stroke-width="1.5" />
       <circle r="48" fill="${theme.grid}" opacity="0.6"/>
-      <text x="0" y="12" fill="${theme.textMain}" font-family="'Montserrat', sans-serif" font-weight="700" font-size="36" text-anchor="middle" letter-spacing="2">
-        ${user.centerText}
-      </text>
+      
+      ${centerTextSVG}
+      
       <circle r="48" fill="url(#accentGrad)" opacity="0.1" />
     </g>
 
